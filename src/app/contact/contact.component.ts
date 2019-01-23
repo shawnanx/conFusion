@@ -1,8 +1,9 @@
+import { FeedbackService } from './../services/feedback.service';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-
+import { delay } from 'rxjs/operators';
 import { Feedback, ContactType } from '../shared/feedback';
-import { flyInOut } from '../animations/app.animation';
+import { flyInOut, expand } from '../animations/app.animation';
 
 @Component({
   selector: 'app-contact',
@@ -13,7 +14,8 @@ import { flyInOut } from '../animations/app.animation';
     'style': 'display: block;'
   },
   animations: [
-    flyInOut()
+    flyInOut(),
+    expand()
   ]
 })
 export class ContactComponent implements OnInit {
@@ -22,6 +24,8 @@ export class ContactComponent implements OnInit {
   feedbackForm: FormGroup;
   feedback: Feedback;
   contactType = ContactType;
+  errMsg: string;
+  showForm = true;
   formErrors = {
     'firstname': '',
     'lastname': '',
@@ -51,7 +55,9 @@ export class ContactComponent implements OnInit {
   };
 
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder,
+    private feedbackService: FeedbackService
+  ) {
     this.createForm();
   }
 
@@ -95,8 +101,7 @@ export class ContactComponent implements OnInit {
   }
 
   onSubmit() {
-    this.feedback = this.feedbackForm.value;
-    console.log(this.feedback);
+    this.submitFeedback();
     this.feedbackForm.reset({
       firstname: '',
       lastname: '',
@@ -107,6 +112,25 @@ export class ContactComponent implements OnInit {
       message: ''
     });
     this.feedbackFormDirective.resetForm();
+  }
+
+  submitFeedback() {
+    this.showForm = false;
+    // console.log(this.feedback);
+    this.feedbackService.postFeedback(this.feedbackForm.value).subscribe(
+      data => {
+        this.feedback = data;
+        setTimeout(() => {
+          this.feedback = null;
+          this.showForm = true;
+        }, 5000);
+      },
+      err => {
+        this.errMsg = err;
+        this.feedback = null;
+        this.showForm = true;
+      }
+    );
   }
 
 }
